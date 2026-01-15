@@ -16,7 +16,7 @@ app = Flask(__name__)
 bootstrap = Bootstrap(app)
 
 app.secret_key = SECRET_KEY
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://laimingxing:laimingxing@59.111.123.138/test"
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///todolist.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 
@@ -103,4 +103,26 @@ def load_user(user_id):
 
 
 if __name__ == '__main__':
+    # 初始化数据库
+    with app.app_context():
+        db.create_all()
+        # 检查是否已经有用户，如果没有则添加默认用户
+        existing_user = User.query.first()
+        if not existing_user:
+            # 添加默认用户
+            user = User(username='admin', password='admin')
+            db.session.add(user)
+            db.session.commit()
+            
+            # 添加默认的待办事项
+            import time
+            now = int(time.time())
+            todo1 = TodoList(user_id=user.id, title='习近平五谈稳中求进织密扎牢民生保障网', status=0)
+            todo2 = TodoList(user_id=user.id, title='特朗普获超270张选举人票将入主白宫', status=1)
+            db.session.add(todo1)
+            db.session.add(todo2)
+            db.session.commit()
+            
+            print("数据库初始化完成，已添加默认用户和测试数据")
+    
     app.run(host='0.0.0.0', port=5000, debug=True)
