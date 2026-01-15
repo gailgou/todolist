@@ -2,36 +2,106 @@
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block page_content %}
+<style>
+    .overdue {
+        background-color: #ffcccc !important;
+    }
+</style>
 
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-md-12">
+        <div class="pull-right">
+            <form class="form-inline" method="GET" action="{{ url_for('show_todo_list') }}">
+                <label>排序方式：</label>
+                <select name="sort" class="form-control" onchange="this.form.submit()">
+                    <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>创建时间降序</option>
+                    <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>创建时间升序</option>
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+<h3>未完成的待办事项</h3>
+<form action="{{ url_for('batch_complete') }}" method="POST">
+    {{ form.csrf_token }}
+    <table class="table table-hover">
+        <thead>
+            <th class="active"><input type="checkbox" id="selectAllIncomplete" onclick="toggleAllIncomplete()"></th>
+            <th class="active">No</th>
+            <th class="active">描述</th>
+            <th class="active">截止时间</th>
+            <th class="active">创建时间</th>
+            <th class='active'>操作</th> 
+        </thead>
+        <tbody>
+            {% set incomplete_count = 0 %}
+            {% for todo in todolists %}
+                {% if not todo.status %}
+                    {% set incomplete_count = incomplete_count + 1 %}
+                    {% set is_overdue = false %}
+                    {% if todo.deadline and todo.deadline < current_time %}
+                        {% set is_overdue = true %}
+                    {% endif %}
+                    
+                    <tr class="{% if is_overdue %}overdue{% else %}info{% endif %}">
+                        <td><input type="checkbox" name="todo_ids" value="{{ todo.id }}" class="incomplete-checkbox"></td>
+                        <td>{{ incomplete_count }}</td>
+                        <td>{{ todo.title }}</td>
+                        <td>
+                            {% if todo.deadline %}
+                                {{ todo.deadline | timestamp_to_datetime }}
+                            {% else %}
+                                无
+                            {% endif %}
+                        </td>
+                        <td>{{ todo.create_time | timestamp_to_datetime }}</td>
+                        <td>
+                            <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
+                            <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if incomplete_count > 0 %}
+        <button type="submit" class="btn btn-primary">批量完成选中项</button>
+    {% endif %}
+</form>
+
+<h3 style="margin-top: 30px;">已完成的待办事项</h3>
 <table class="table table-hover">
     <thead>
         <th class="active">No</th>
         <th class="active">描述</th>
-        <th class="active">是否完成</th>
+        <th class="active">截止时间</th>
         <th class="active">创建时间</th>
         <th class='active'>操作</th> 
     </thead>
     <tbody>
+        {% set completed_count = 0 %}
         {% for todo in todolists %}
-
-            <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
-                <td>{{ loop.index }}</td>
-                <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
-                <td>
-                    {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
-                    {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
-                    {% endif %}
-                </td>
-
-            </tr>
+            {% if todo.status %}
+                {% set completed_count = completed_count + 1 %}
+                <tr class="success">
+                    <td>{{ completed_count }}</td>
+                    <td>{{ todo.title }}</td>
+                    <td>
+                        {% if todo.deadline %}
+                            {{ todo.deadline | timestamp_to_datetime }}
+                        {% else %}
+                            无
+                        {% endif %}
+                    </td>
+                    <td>{{ todo.create_time | timestamp_to_datetime }}</td>
+                    <td>
+                        <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
+                    </td>
+                </tr>
+            {% endif %}
         {% endfor %}
-
     </tbody>
 </table>
 
@@ -56,5 +126,14 @@
     </div> </div>
 </div>
 
+<script>
+function toggleAllIncomplete() {
+    var checkboxes = document.querySelectorAll('.incomplete-checkbox');
+    var selectAll = document.getElementById('selectAllIncomplete');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = selectAll.checked;
+    });
+}
+</script>
 
 {% endblock %}
