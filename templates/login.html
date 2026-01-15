@@ -3,9 +3,57 @@
 
 {% block page_content %}
 <div class="row">
-    <div class="col-md-4 col-md-offset-4">
-        <h2 class="form-signin-heading">please sigin in</h2>
-        {{ wtf.quick_form(form, form_type="horizontal") }}
+    <div class="col-md-4 col-md-offset-2">
+        <h2 class="form-signin-heading">登录</h2>
+        <form method="POST" action="{{ url_for('login') }}" class="form-horizontal">
+            {{ login_form.hidden_tag() }}
+            <div class="form-group">
+                <label for="{{ login_form.username.id }}" class="col-sm-4 control-label">{{ login_form.username.label.text }}</label>
+                <div class="col-sm-8">
+                    {{ login_form.username(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ login_form.password.id }}" class="col-sm-4 control-label">{{ login_form.password.label.text }}</label>
+                <div class="col-sm-8">
+                    {{ login_form.password(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-4 col-sm-8">
+                    <button type="submit" name="action" value="login" class="btn btn-primary">登录</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-4">
+        <h2 class="form-signin-heading">注册</h2>
+        <form method="POST" action="{{ url_for('login') }}" class="form-horizontal">
+            {{ register_form.hidden_tag() }}
+            <div class="form-group">
+                <label for="{{ register_form.username.id }}" class="col-sm-4 control-label">{{ register_form.username.label.text }}</label>
+                <div class="col-sm-8">
+                    {{ register_form.username(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ register_form.password.id }}" class="col-sm-4 control-label">{{ register_form.password.label.text }}</label>
+                <div class="col-sm-8">
+                    {{ register_form.password(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ register_form.password_confirm.id }}" class="col-sm-4 control-label">{{ register_form.password_confirm.label.text }}</label>
+                <div class="col-sm-8">
+                    {{ register_form.password_confirm(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-4 col-sm-8">
+                    <button type="submit" name="action" value="register" class="btn btn-success">注册</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
