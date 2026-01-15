@@ -3,40 +3,87 @@
 
 {% block page_content %}
 
-<table class="table table-hover">
-    <thead>
-        <th class="active">No</th>
-        <th class="active">描述</th>
-        <th class="active">是否完成</th>
-        <th class="active">创建时间</th>
-        <th class='active'>操作</th> 
-    </thead>
-    <tbody>
-        {% for todo in todolists %}
+<div class="row">
+    <div class="col-md-6">
+        <h2>未完成的待办
+            <small>
+                <a href="?sort={{ 'asc' if sort_order == 'desc' else 'desc' }}">
+                    {{ '↓' if sort_order == 'desc' else '↑' }} 按时间排序
+                </a>
+            </small>
+        </h2>
+        {% if pending_todos %}
+        <form method="POST" action="{{ url_for('batch_complete') }}" style="margin-bottom: 15px;">
+            <button type="submit" class="btn btn-success btn-sm">批量完成选中</button>
+            <table class="table table-hover">
+                <thead>
+                    <th><input type="checkbox" id="select_all_pending"></th>
+                    <th class="active">No</th>
+                    <th class="active">描述</th>
+                    <th class="active">截止时间</th>
+                    <th class="active">创建时间</th>
+                    <th class='active'>操作</th> 
+                </thead>
+                <tbody>
+                    {% for todo in pending_todos %}
+                    {% set is_overdue = todo.deadline and now > todo.deadline %}
+                    <tr class="{% if is_overdue %}danger{% else %}info{% endif %}">
+                        <td><input type="checkbox" name="todo_ids" value="{{ todo.id }}" class="todo_checkbox"></td>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ todo.title }}{% if is_overdue %} <span class="label label-danger">已逾期</span>{% endif %}</td>
+                        <td>
+                            {% if todo.deadline %}
+                                {{ datetime.fromtimestamp(todo.deadline).strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                无
+                            {% endif %}
+                        </td>
+                        <td>{{ datetime.fromtimestamp(todo.create_time).strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success btn-sm" role="button">修改</a>
+                            <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        {% else %}
+        <p class="text-muted">暂无未完成的待办事项</p>
+        {% endif %}
+    </div>
 
-            <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
-                <td>{{ loop.index }}</td>
-                <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
-                <td>
-                    {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
-                    {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
-                    {% endif %}
-                </td>
-
-            </tr>
-        {% endfor %}
-
-    </tbody>
-</table>
+    <div class="col-md-6">
+        <h2>已完成的待办</h2>
+        {% if completed_todos %}
+        <table class="table table-hover">
+            <thead>
+                <th class="active">No</th>
+                <th class="active">描述</th>
+                <th class="active">创建时间</th>
+                <th class='active'>操作</th> 
+            </thead>
+            <tbody>
+                {% for todo in completed_todos %}
+                <tr class="success">
+                    <td>{{ loop.index }}</td>
+                    <td>{{ todo.title }}</td>
+                    <td>{{ datetime.fromtimestamp(todo.create_time).strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">暂无已完成的待办事项</p>
+        {% endif %}
+    </div>
+</div>
 
 <!-- Button trigger modal -->
-<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal"> ADD </button>
+<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal"> 添加待办 </button>
 
 <!-- Modal -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -44,17 +91,24 @@
 
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="myModalLabel" align="center">add new todo list</h4>
+        <h4 class="modal-title" id="myModalLabel" align="center">添加新待办事项</h4>
       </div>
 
       <div class="modal-body">
           <div class="row">
-              <div class="col-md-8 col-md-offset-2"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
+              <div class="col-md-10 col-md-offset-1"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
           </div>
       </div> <!-- modal body -->
 
     </div> </div>
 </div>
 
+<script>
+$(document).ready(function() {
+    $('#select_all_pending').click(function() {
+        $('.todo_checkbox').prop('checked', this.checked);
+    });
+});
+</script>
 
 {% endblock %}
