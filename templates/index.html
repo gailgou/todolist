@@ -3,10 +3,26 @@
 
 {% block page_content %}
 
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-md-12">
+        <div class="btn-group">
+            <a href="{{ url_for('show_todo_list') }}" class="btn {% if not current_category %}btn-primary{% else %}btn-default{% endif %}">全部</a>
+            <a href="{{ url_for('show_todo_list', category='工作') }}" class="btn {% if current_category == '工作' %}btn-primary{% else %}btn-default{% endif %}">工作</a>
+            <a href="{{ url_for('show_todo_list', category='生活') }}" class="btn {% if current_category == '生活' %}btn-primary{% else %}btn-default{% endif %}">生活</a>
+            <a href="{{ url_for('show_todo_list', category='学习') }}" class="btn {% if current_category == '学习' %}btn-primary{% else %}btn-default{% endif %}">学习</a>
+            <a href="{{ url_for('show_todo_list', category='亲子') }}" class="btn {% if current_category == '亲子' %}btn-primary{% else %}btn-default{% endif %}">亲子</a>
+            <a href="{{ url_for('show_todo_list', category='家庭') }}" class="btn {% if current_category == '家庭' %}btn-primary{% else %}btn-default{% endif %}">家庭</a>
+        </div>
+    </div>
+</div>
+
 <table class="table table-hover">
     <thead>
         <th class="active">No</th>
         <th class="active">描述</th>
+        <th class="active">分类</th>
+        <th class="active">优先级</th>
+        <th class="active">截止时间</th>
         <th class="active">是否完成</th>
         <th class="active">创建时间</th>
         <th class='active'>操作</th> 
@@ -19,13 +35,45 @@
             {% else %} <tr class="info"> {% endif %}
                 <td>{{ loop.index }}</td>
                 <td>{{ todo.title }}</td>
+                <td>{{ todo.category }}</td>
+                <td>
+                    {% if todo.priority == 'P0' %}<span class="label label-danger">P0</span>
+                    {% elif todo.priority == 'P1' %}<span class="label label-warning">P1</span>
+                    {% else %}<span class="label label-default">P2</span>{% endif %}
+                </td>
+                <td>
+                    {% if todo.deadline %}
+                        {% set current_time = current_timestamp() %}
+                        {% if todo.deadline < current_time %}
+                            <span class="text-danger">
+                                {% set overdue = current_time - todo.deadline %}
+                                {% if overdue >= 86400 %}
+                                    已逾期 {{ (overdue / 86400) | int }} 天
+                                {% elif overdue >= 3600 %}
+                                    已逾期 {{ (overdue / 3600) | int }} 小时
+                                {% elif overdue >= 60 %}
+                                    已逾期 {{ (overdue / 60) | int }} 分钟
+                                {% else %}
+                                    已逾期 {{ overdue }} 秒
+                                {% endif %}
+                            </span>
+                        {% else %}
+                            {{ todo.deadline | int | timestamp_to_datetime }}
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
+                <td>{{ todo.create_time | int | timestamp_to_datetime }}</td>
                 <td>
                     {% if todo.status %}
                     <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
                     {% else %}
                     <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
+                    {% if todo.deadline %}
+                    <a href="{{ url_for('set_alarm', id=todo.id) }}" class="btn btn-info" role ="button">闹钟</a>
+                    {% endif %}
                     {% endif %}
                 </td>
 
