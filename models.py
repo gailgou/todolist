@@ -13,12 +13,18 @@ class TodoList(db.Model):
     title = db.Column(db.String(1024), nullable=False)
     status = db.Column(db.Integer, nullable=False)
     create_time = db.Column(db.Integer, nullable=False)
+    category = db.Column(db.String(50), nullable=False, default='生活')
+    priority = db.Column(db.Integer, nullable=False, default=2)
+    deadline = db.Column(db.Integer, nullable=True)
 
-    def __init__(self, user_id, title, status):
+    def __init__(self, user_id, title, status, category='生活', priority=2, deadline=None):
         self.user_id = user_id
         self.title = title
         self.status = status
         self.create_time = time.time()
+        self.category = category
+        self.priority = priority
+        self.deadline = deadline
 
 
 class User(UserMixin, db.Model):

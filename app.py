@@ -9,6 +9,8 @@ from flask_login import login_required, login_user, logout_user, current_user
 from forms import TodoListForm, LoginForm
 from ext import db, login_manager
 from models import TodoList, User
+import subprocess
+import time
 
 SECRET_KEY = 'This is my key'
 
@@ -30,13 +32,25 @@ login_manager.login_view = "login"
 def show_todo_list():
     form = TodoListForm()
     if request.method == 'GET':
-        todolists = TodoList.query.all()
+        todolists = TodoList.query.order_by(TodoList.priority.asc()).all()
         return render_template('index.html', todolists=todolists, form=form)
     else:
         if form.validate_on_submit():
-            todolist = TodoList(current_user.id, form.title.data, form.status.data)
+            todolist = TodoList(current_user.id, form.title.data, form.status.data, form.category.data, form.priority.data, form.deadline.data)
             db.session.add(todolist)
             db.session.commit()
+            if form.deadline.data:
+                deadline_time = form.deadline.data
+                current_time = int(time.time())
+                if deadline_time > current_time:
+                    delay = deadline_time - current_time
+                    message = f"提醒：待办事项'{form.title.data}'已到期"
+                    script = f"""
+                    tell application "System Events"
+                        display alert "{message}"
+                    end tell
+                    """
+                    subprocess.Popen(['osascript', '-e', script])
             flash('You have add a new todo list')
         else:
             flash(form.errors)
@@ -61,6 +75,9 @@ def change_todo_list(id):
         form = TodoListForm()
         form.title.data = todolist.title
         form.status.data = str(todolist.status)
+        form.category.data = todolist.category
+        form.priority.data = todolist.priority
+        form.deadline.data = todolist.deadline
         return render_template('modify.html', form=form)
     else:
         form = TodoListForm()
@@ -68,7 +85,22 @@ def change_todo_list(id):
             todolist = TodoList.query.filter_by(id=id).first_or_404()
             todolist.title = form.title.data
             todolist.status = form.status.data
+            todolist.category = form.category.data
+            todolist.priority = form.priority.data
+            todolist.deadline = form.deadline.data
             db.session.commit()
+            if form.deadline.data:
+                deadline_time = form.deadline.data
+                current_time = int(time.time())
+                if deadline_time > current_time:
+                    delay = deadline_time - current_time
+                    message = f"提醒：待办事项'{form.title.data}'已到期"
+                    script = f"""
+                    tell application "System Events"
+                        display alert "{message}"
+                    end tell
+                    """
+                    subprocess.Popen(['osascript', '-e', script])
             flash('You have modify a todolist')
         else:
             flash(form.errors)
