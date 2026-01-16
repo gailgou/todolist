@@ -6,9 +6,13 @@
 <table class="table table-hover">
     <thead>
         <th class="active">No</th>
+        <th class="active">分类</th>
+        <th class="active">优先级</th>
         <th class="active">描述</th>
         <th class="active">是否完成</th>
         <th class="active">创建时间</th>
+        <th class="active">截止时间</th>
+        <th class="active">逾期时间</th>
         <th class='active'>操作</th> 
     </thead>
     <tbody>
@@ -18,9 +22,13 @@
             {% if todo.status %} <tr class="success">
             {% else %} <tr class="info"> {% endif %}
                 <td>{{ loop.index }}</td>
+                <td>{{ todo.category }}</td>
+                <td>P{{ todo.priority }}</td>
                 <td>{{ todo.title }}</td>
                 <td>{{ todo.status }}</td>
                 <td>{{ todo.create_time }}</td>
+                <td>{{ todo.deadline }}</td>
+                <td>{% if todo.deadline and todo.deadline < todo.create_time %}{{ todo.create_time - todo.deadline }}秒前{% endif %}</td>
                 <td>
                     {% if todo.status %}
                     <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
