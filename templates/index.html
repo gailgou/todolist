@@ -20,7 +20,7 @@
                 <td>{{ loop.index }}</td>
                 <td>{{ todo.title }}</td>
                 <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
+                <td>{{ todo.create_time | int }}</td>
                 <td>
                     {% if todo.status %}
                     <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>

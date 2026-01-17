@@ -4,7 +4,18 @@
 {% block page_content %}
 <div class="row">
     <div class="col-md-4 col-md-offset-4">
-        <h2 class="form-signin-heading">please sigin in</h2>
+        <h2 class="form-signin-heading">请登录</h2>
+        
+        {% if logged_users %}
+        <div class="alert alert-info">
+            <strong>已登录账号:</strong><br>
+            {% for user_data in logged_users %}
+                {{ user_data.username }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            <br><small>(最多支持3个账号同时登录)</small>
+        </div>
+        {% endif %}
+        
         {{ wtf.quick_form(form, form_type="horizontal") }}
     </div>
 </div>
