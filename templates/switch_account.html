@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block page_content %}
+    <h2>Switch Account</h2>
+    <p>Current User: <strong>{{ current_user.username }}</strong></p>
+    
+    <h3>Currently Logged in Accounts ({{ users|length }}/3)</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>
+                    {% if user.id == current_user.id %}
+                        <span class="label label-success">Active</span>
+                    {% else %}
+                        <span class="label label-default">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('switch_account') }}" style="display: inline;">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <button type="submit" class="btn btn-primary btn-sm">Switch</button>
+                        </form>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmRemove({{ user.id }});">Remove</button>
+                    {% else %}
+                        <span class="text-muted">Active</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if users|length < 3 %}
+        <h3>Add Another Account</h3>
+        <form method="POST" action="{{ url_for('switch_account') }}" class="form-inline">
+            <div class="form-group">
+                <label for="add_username">Username:</label>
+                <input type="text" class="form-control" id="add_username" name="add_username" required>
+            </div>
+            <div class="form-group">
+                <label for="add_password">Password:</label>
+                <input type="password" class="form-control" id="add_password" name="add_password" required>
+            </div>
+            <button type="submit" class="btn btn-success">Add Account</button>
+        </form>
+    {% else %}
+        <div class="alert alert-info">
+            You have reached the maximum limit of 3 logged in accounts.
+        </div>
+    {% endif %}
+    
+    <script>
+        function confirmRemove(userId) {
+            if (confirm('Are you sure you want to remove this account?')) {
+                // 创建一个隐藏的表单并提交
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/remove_account/' + userId;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+{% endblock %}
