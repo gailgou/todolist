@@ -8,6 +8,7 @@
         <!-- logout links -->
         {% if current_user.is_authenticated %}
             <ul class="nav navbar-nav pull-right">
+                <li><a class="btn" href="{{ url_for('switch_account') }}">Switch Account</a></li>
                 <li><a class="btn" href="{{ url_for('logout') }}">logout</a></li>
             </ul>
         {% endif %}
