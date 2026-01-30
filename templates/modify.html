@@ -5,7 +5,66 @@
 
 <div class="row">
     <h4 class="modal-title" id="myModalLabel" align="center"></h4>
-    <div class="col-md-8 col-md-offset-2"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
+    <div class="col-md-8 col-md-offset-2"> 
+        <form method="POST" class="form-horizontal">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.title.label(class="col-md-4 control-label") }}
+                <div class="col-md-8">
+                    {{ form.title(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                {{ form.category.label(class="col-md-4 control-label") }}
+                <div class="col-md-8">
+                    {{ form.category(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                {{ form.priority.label(class="col-md-4 control-label") }}
+                <div class="col-md-8">
+                    {{ form.priority(class="form-control") }}
+                </div>
+            </div>
+            <div class="form-group">
+                {{ form.deadline.label(class="col-md-4 control-label") }}
+                <div class="col-md-8">
+                    <div class='input-group date' id='datetimepicker'>
+                        <input type='text' class="form-control" name="deadline" id="deadline" placeholder="选择日期和时间">
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                {{ form.status.label(class="col-md-4 control-label") }}
+                <div class="col-md-8">
+                    {% for subfield in form.status %}
+                        <div class="radio">
+                            {{ subfield }}
+                            {{ subfield.label }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-offset-4 col-md-8">
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    // 初始化时间选择器
+    $('#datetimepicker').datetimepicker({
+        format: 'YYYY-MM-DD HH:mm',
+        locale: 'zh-cn'
+    });
+});
+</script>
 
 {% endblock %}

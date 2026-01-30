@@ -3,10 +3,27 @@
 
 {% block page_content %}
 
+<!-- 分类筛选 -->
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-md-12">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-default category-filter active" data-category="all">全部</button>
+            <button type="button" class="btn btn-default category-filter" data-category="工作">工作</button>
+            <button type="button" class="btn btn-default category-filter" data-category="生活">生活</button>
+            <button type="button" class="btn btn-default category-filter" data-category="学习">学习</button>
+            <button type="button" class="btn btn-default category-filter" data-category="亲子">亲子</button>
+            <button type="button" class="btn btn-default category-filter" data-category="家庭">家庭</button>
+        </div>
+    </div>
+</div>
+
 <table class="table table-hover">
     <thead>
         <th class="active">No</th>
         <th class="active">描述</th>
+        <th class="active">分类</th>
+        <th class="active">优先级</th>
+        <th class="active">截止时间</th>
         <th class="active">是否完成</th>
         <th class="active">创建时间</th>
         <th class='active'>操作</th> 
@@ -15,17 +32,50 @@
         {% for todo in todolists %}
 
             <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
+            {% if todo.status %} <tr class="success" data-category="{{ todo.category }}">
+            {% else %} <tr class="info" data-category="{{ todo.category }}"> {% endif %}
                 <td>{{ loop.index }}</td>
                 <td>{{ todo.title }}</td>
+                <td><span class="label label-primary">{{ todo.category }}</span></td>
+                <td>
+                    {% if todo.priority == 'P0' %}
+                        <span class="label label-danger">{{ todo.priority }}</span>
+                    {% elif todo.priority == 'P1' %}
+                        <span class="label label-warning">{{ todo.priority }}</span>
+                    {% else %}
+                        <span class="label label-default">{{ todo.priority }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if todo.deadline %}
+                        {% set current_time = now_timestamp %}
+                        {% set time_diff = current_time - todo.deadline %}
+                        {% if time_diff > 0 %}
+                            {% set days = (time_diff / 86400)|int %}
+                            {% if days >= 365 %}
+                                {% set years = (days / 365)|int %}
+                                <span class="label label-danger">逾期 {{ years }} 年</span>
+                            {% elif days > 0 %}
+                                <span class="label label-danger">逾期 {{ days }} 天</span>
+                            {% else %}
+                                {% set hours = ((time_diff % 86400) / 3600)|int %}
+                                <span class="label label-danger">逾期 {{ hours }} 小时</span>
+                            {% endif %}
+                        {% else %}
+                            {{ todo.deadline|timestamp_to_datetime }}
+                        {% endif %}
+                    {% else %}
+                        无
+                    {% endif %}
+                </td>
                 <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
+                <td>{{ todo.create_time|timestamp_to_datetime }}</td>
                 <td>
                     {% if todo.status %}
                     <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
                     {% else %}
                     <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
+                    <button class="btn btn-info reminder-btn" data-id="{{ todo.id }}" data-title="{{ todo.title }}" data-deadline="{{ todo.deadline }}">设提醒</button>
                     {% endif %}
                 </td>
 
@@ -49,12 +99,108 @@
 
       <div class="modal-body">
           <div class="row">
-              <div class="col-md-8 col-md-offset-2"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
+              <div class="col-md-8 col-md-offset-2"> 
+                  <form method="POST" class="form-horizontal">
+                      {{ form.hidden_tag() }}
+                      <div class="form-group">
+                          {{ form.title.label(class="col-md-4 control-label") }}
+                          <div class="col-md-8">
+                              {{ form.title(class="form-control") }}
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          {{ form.category.label(class="col-md-4 control-label") }}
+                          <div class="col-md-8">
+                              {{ form.category(class="form-control") }}
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          {{ form.priority.label(class="col-md-4 control-label") }}
+                          <div class="col-md-8">
+                              {{ form.priority(class="form-control") }}
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          {{ form.deadline.label(class="col-md-4 control-label") }}
+                          <div class="col-md-8">
+                              <div class='input-group date' id='datetimepicker'>
+                                  <input type='text' class="form-control" name="deadline" id="deadline" placeholder="选择日期和时间">
+                                  <span class="input-group-addon">
+                                      <span class="glyphicon glyphicon-calendar"></span>
+                                  </span>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          {{ form.status.label(class="col-md-4 control-label") }}
+                          <div class="col-md-8">
+                              {% for subfield in form.status %}
+                                  <div class="radio">
+                                      {{ subfield }}
+                                      {{ subfield.label }}
+                                  </div>
+                              {% endfor %}
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <div class="col-md-offset-4 col-md-8">
+                              {{ form.submit(class="btn btn-primary") }}
+                          </div>
+                      </div>
+                  </form>
+              </div>
           </div>
       </div> <!-- modal body -->
 
     </div> </div>
 </div>
 
+<script>
+$(document).ready(function() {
+    // 初始化时间选择器
+    $('#datetimepicker').datetimepicker({
+        format: 'YYYY-MM-DD HH:mm',
+        locale: 'zh-cn'
+    });
+    
+    // 分类筛选功能
+    $('.category-filter').click(function() {
+        $('.category-filter').removeClass('active');
+        $(this).addClass('active');
+        
+        var category = $(this).data('category');
+        if (category === 'all') {
+            $('tbody tr').show();
+        } else {
+            $('tbody tr').hide();
+            $('tbody tr[data-category="' + category + '"]').show();
+        }
+    });
+    
+    // 设置提醒功能
+    $('.reminder-btn').click(function() {
+        var id = $(this).data('id');
+        var title = $(this).data('title');
+        var deadline = $(this).data('deadline');
+        
+        if (deadline) {
+            // 发送设置提醒请求
+            $.post('/set_reminder', {
+                id: id,
+                title: title,
+                deadline: deadline
+            }, function(response) {
+                if (response.success) {
+                    alert('提醒设置成功！');
+                } else {
+                    alert('提醒设置失败：' + response.message);
+                }
+            });
+        } else {
+            alert('请先设置截止时间');
+        }
+    });
+});
+</script>
 
 {% endblock %}
