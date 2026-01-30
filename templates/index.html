@@ -3,6 +3,13 @@
 
 {% block page_content %}
 
+<!-- 显示当前用户 -->
+<div class="row">
+    <div class="col-md-12">
+        <h3>当前用户: {{ current_user.username }}</h3>
+    </div>
+</div>
+
 <table class="table table-hover">
     <thead>
         <th class="active">No</th>
@@ -56,5 +63,50 @@
     </div> </div>
 </div>
 
+<!-- Switch User Modal -->
+<div class="modal fade" id="switchUserModal" tabindex="-1" role="dialog" aria-labelledby="switchUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="switchUserModalLabel">切换用户</h4>
+      </div>
+      <div class="modal-body">
+        <div class="list-group">
+          {% for user in logged_in_users %}
+            <a href="{{ url_for('switch_user', user_id=user.id) }}" class="list-group-item {% if user.id == current_user.id %}active{% endif %}">
+              {{ user.username }} {% if user.id == current_user.id %}(当前){% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="addUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="addUserModalLabel">添加新用户</h4>
+      </div>
+      <div class="modal-body">
+        <form action="{{ url_for('add_user') }}" method="post">
+          <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">添加并登录</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
