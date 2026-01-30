@@ -2,6 +2,12 @@
 
 {% block title %}My TODO List{% endblock %}
 
+{% block head %}
+{{ super() }}
+<!-- Bootstrap DateTimePicker CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css">
+{% endblock %}
+
 {% block navbar %}
     <nav class="navbar navbar-inverse container">
         <div class="navbar-header"> <a class="navbar-brand" href="{{ url_for('show_todo_list') }}">TODO</a> </div>
@@ -29,4 +35,27 @@
         <!-- body block -->
         {% block page_content %} {% endblock %}
     </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Moment.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<!-- Bootstrap DateTimePicker JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+<!-- Chinese localization -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/locales/bootstrap-datetimepicker.zh-CN.js"></script>
+
+<script>
+$(function () {
+    // 为所有截止时间输入框添加日期时间选择器
+    $('#deadline').datetimepicker({
+        format: 'YYYY-MM-DD HH:mm',
+        locale: 'zh-CN',
+        sideBySide: true
+    });
+});
+</script>
 {% endblock %}

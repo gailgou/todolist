@@ -3,37 +3,111 @@
 
 {% block page_content %}
 
-<table class="table table-hover">
-    <thead>
-        <th class="active">No</th>
-        <th class="active">描述</th>
-        <th class="active">是否完成</th>
-        <th class="active">创建时间</th>
-        <th class='active'>操作</th> 
-    </thead>
-    <tbody>
-        {% for todo in todolists %}
+<!-- 排序按钮 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-group pull-right" role="group">
+            <a href="{{ url_for('show_todo_list', sort='asc') }}" class="btn btn-default {% if sort_order == 'asc' %}active{% endif %}">创建时间升序</a>
+            <a href="{{ url_for('show_todo_list', sort='desc') }}" class="btn btn-default {% if sort_order == 'desc' %}active{% endif %}">创建时间降序</a>
+        </div>
+    </div>
+</div>
 
-            <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
-                <td>{{ loop.index }}</td>
-                <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
-                <td>
-                    {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
-                    {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
-                    {% endif %}
-                </td>
+<br>
 
-            </tr>
-        {% endfor %}
+<!-- 未完成的待办事项 -->
+<div class="panel panel-info">
+    <div class="panel-heading">
+        <h3 class="panel-title">未完成的待办事项</h3>
+    </div>
+    <div class="panel-body">
+        {% if incomplete_todos %}
+        <form method="post" action="{{ url_for('batch_complete') }}">
+            <table class="table table-hover">
+                <thead>
+                    <th class="active">
+                        <input type="checkbox" id="selectAllIncomplete" onchange="toggleCheckboxes('incomplete')">
+                    </th>
+                    <th class="active">No</th>
+                    <th class="active">描述</th>
+                    <th class="active">创建时间</th>
+                    <th class="active">截止时间</th>
+                    <th class='active'>操作</th> 
+                </thead>
+                <tbody>
+                    {% for todo in incomplete_todos %}
+                        <tr class="{% if todo.deadline and todo.deadline < now.timestamp() %}danger{% else %}info{% endif %}">
+                            <td>
+                                <input type="checkbox" name="todo_ids" value="{{ todo.id }}" class="incomplete-checkbox">
+                            </td>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ todo.title }}</td>
+                            <td>{{ todo.create_time|timestamp_to_datetime }}</td>
+                            <td>
+                                {% if todo.deadline %}
+                                    {{ todo.deadline|timestamp_to_datetime }}
+                                    {% if todo.deadline < now.timestamp() %}
+                                        <span class="label label-danger">已过期</span>
+                                    {% endif %}
+                                {% else %}
+                                    无
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role="button">修改</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary">批量完成</button>
+        </form>
+        {% else %}
+        <p>没有未完成的待办事项</p>
+        {% endif %}
+    </div>
+</div>
 
-    </tbody>
-</table>
+<!-- 已完成的待办事项 -->
+<div class="panel panel-success">
+    <div class="panel-heading">
+        <h3 class="panel-title">已完成的待办事项</h3>
+    </div>
+    <div class="panel-body">
+        {% if complete_todos %}
+        <table class="table table-hover">
+            <thead>
+                <th class="active">No</th>
+                <th class="active">描述</th>
+                <th class="active">创建时间</th>
+                <th class="active">截止时间</th>
+                <th class='active'>操作</th> 
+            </thead>
+            <tbody>
+                {% for todo in complete_todos %}
+                    <tr class="success">
+                        <td>{{ loop.index }}</td>
+                        <td>{{ todo.title }}</td>
+                        <td>{{ todo.create_time|timestamp_to_datetime }}</td>
+                        <td>
+                            {% if todo.deadline %}
+                                {{ todo.deadline|timestamp_to_datetime }}
+                            {% else %}
+                                无
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role="button">删除</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>没有已完成的待办事项</p>
+        {% endif %}
+    </div>
+</div>
 
 <!-- Button trigger modal -->
 <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal"> ADD </button>
@@ -56,5 +130,15 @@
     </div> </div>
 </div>
 
+<script>
+function toggleCheckboxes(className) {
+    var checkboxes = document.getElementsByClassName(className + '-checkbox');
+    var selectAll = document.getElementById('selectAll' + className.charAt(0).toUpperCase() + className.slice(1));
+    
+    for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = selectAll.checked;
+    }
+}
+</script>
 
 {% endblock %}
