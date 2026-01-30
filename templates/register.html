@@ -4,10 +4,10 @@
 {% block page_content %}
 <div class="row">
     <div class="col-md-4 col-md-offset-4">
-        <h2 class="form-signin-heading">please sigin in</h2>
+        <h2 class="form-signin-heading">用户注册</h2>
         {{ wtf.quick_form(form, form_type="horizontal") }}
         <div style="margin-top: 20px; text-align: center;">
-            <p>还没有账号？<a href="{{ url_for('register') }}">立即注册</a></p>
+            <p>已有账号？<a href="{{ url_for('login') }}">立即登录</a></p>
         </div>
     </div>
 </div>

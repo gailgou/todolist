@@ -2,43 +2,103 @@
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block page_content %}
+<style>
+.deadline-expired {
+    background-color: #ffcccc !important;
+}
+.sort-link {
+    margin-left: 10px;
+    text-decoration: none;
+}
+.sort-link.active {
+    font-weight: bold;
+    color: #337ab7;
+}
+.batch-actions {
+    margin-bottom: 15px;
+}
+</style>
 
+<div class="batch-actions">
+    <button type="button" class="btn btn-success" id="batchCompleteBtn" onclick="return batchComplete()">
+        <span class="glyphicon glyphicon-ok"></span> 批量完成
+    </button>
+    <label style="margin-left: 10px;">
+        <input type="checkbox" id="selectAllPending" onchange="selectAllPending(this)"> 全选未完成
+    </label>
+    <div class="pull-right">
+        排序：
+        <a href="{{ url_for('show_todo_list', sort='desc') }}" class="sort-link {% if sort == 'desc' %}active{% endif %}">最新优先</a>
+        <a href="{{ url_for('show_todo_list', sort='asc') }}" class="sort-link {% if sort == 'asc' %}active{% endif %}">最早优先</a>
+    </div>
+</div>
+
+<h3>未完成事项</h3>
 <table class="table table-hover">
     <thead>
-        <th class="active">No</th>
-        <th class="active">描述</th>
-        <th class="active">是否完成</th>
-        <th class="active">创建时间</th>
-        <th class='active'>操作</th> 
+        <tr>
+            <th class="active" width="50px"><input type="checkbox" id="selectAllPendingHeader" onchange="selectAllPending(this)"></th>
+            <th class="active">No</th>
+            <th class="active">描述</th>
+            <th class="active">截止时间</th>
+            <th class="active">创建时间</th>
+            <th class="active">操作</th>
+        </tr>
     </thead>
     <tbody>
-        {% for todo in todolists %}
-
-            <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
-                <td>{{ loop.index }}</td>
-                <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
-                <td>
-                    {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
-                    {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
-                    {% endif %}
-                </td>
-
-            </tr>
+        {% for todo in pending_todos %}
+        {% set is_expired = todo.deadline and todo.deadline < (current_time | default(0)) %}
+        <tr class="{% if is_expired %}deadline-expired{% else %}info{% endif %}">
+            <td><input type="checkbox" class="pending-checkbox" value="{{ todo.id }}"></td>
+            <td>{{ loop.index }}</td>
+            <td>{{ todo.title }}</td>
+            <td>{% if todo.deadline %}{{ todo.deadline | timestamp_to_date }}{% else %}无{% endif %}</td>
+            <td>{{ todo.create_time | timestamp_to_date }}</td>
+            <td>
+                <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success btn-sm" role="button">修改</a>
+                <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" style="text-align: center;">暂无未完成事项</td>
+        </tr>
         {% endfor %}
-
     </tbody>
 </table>
 
-<!-- Button trigger modal -->
+<h3>已完成事项</h3>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th class="active">No</th>
+            <th class="active">描述</th>
+            <th class="active">截止时间</th>
+            <th class="active">创建时间</th>
+            <th class="active">操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for todo in completed_todos %}
+        <tr class="success">
+            <td>{{ loop.index }}</td>
+            <td>{{ todo.title }}</td>
+            <td>{% if todo.deadline %}{{ todo.deadline | timestamp_to_date }}{% else %}无{% endif %}</td>
+            <td>{{ todo.create_time | timestamp_to_date }}</td>
+            <td>
+                <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" style="text-align: center;">暂无已完成事项</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal"> ADD </button>
 
-<!-- Modal -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog"> <div class="modal-content">
 
@@ -51,10 +111,48 @@
           <div class="row">
               <div class="col-md-8 col-md-offset-2"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
           </div>
-      </div> <!-- modal body -->
+      </div>
 
     </div> </div>
 </div>
 
+<script>
+function selectAllPending(source) {
+    checkboxes = document.getElementsByClassName('pending-checkbox');
+    for(var i=0, n=checkboxes.length;i<n;i++) {
+        checkboxes[i].checked = source.checked;
+    }
+    document.getElementById('selectAllPending').checked = source.checked;
+    document.getElementById('selectAllPendingHeader').checked = source.checked;
+}
 
+function batchComplete() {
+    var selectedIds = [];
+    var checkboxes = document.getElementsByClassName('pending-checkbox');
+    for(var i=0, n=checkboxes.length;i<n;i++) {
+        if(checkboxes[i].checked) {
+            selectedIds.push(checkboxes[i].value);
+        }
+    }
+    
+    if(selectedIds.length === 0) {
+        alert('请先选择要完成的待办事项');
+        return false;
+    }
+    
+    if(confirm('确定要将选中的 ' + selectedIds.length + ' 个待办事项标记为完成吗？')) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '{{ url_for("batch_complete") }}', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+            if(xhr.status === 200) {
+                window.location.reload();
+            }
+        };
+        var params = selectedIds.map(function(id) { return 'ids[]=' + id; }).join('&');
+        xhr.send(params);
+    }
+    return false;
+}
+</script>
 {% endblock %}
