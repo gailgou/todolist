@@ -3,58 +3,243 @@
 
 {% block page_content %}
 
-<table class="table table-hover">
-    <thead>
-        <th class="active">No</th>
-        <th class="active">描述</th>
-        <th class="active">是否完成</th>
-        <th class="active">创建时间</th>
-        <th class='active'>操作</th> 
-    </thead>
-    <tbody>
-        {% for todo in todolists %}
+<style>
+.category-section {
+    margin-bottom: 30px;
+}
+.category-title {
+    background-color: #f5f5f5;
+    padding: 10px 15px;
+    border-left: 4px solid #337ab7;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.category-tabs {
+    margin-bottom: 20px;
+}
+.category-tab {
+    display: inline-block;
+    padding: 8px 16px;
+    margin-right: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #fff;
+    transition: all 0.3s;
+}
+.category-tab:hover {
+    background-color: #f5f5f5;
+}
+.category-tab.active {
+    background-color: #337ab7;
+    color: #fff;
+    border-color: #337ab7;
+}
+.priority-P0 { background-color: #ffcccc !important; }
+.priority-P1 { background-color: #fff3cd !important; }
+.priority-P2 { background-color: #d4edda !important; }
+.overdue {
+    color: #dc3545;
+    font-weight: bold;
+}
+.deadline {
+    color: #666;
+    font-size: 12px;
+}
+.hidden {
+    display: none;
+}
+</style>
 
-            <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
-                <td>{{ loop.index }}</td>
-                <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
-                <td>
+<div class="category-tabs">
+    <span class="category-tab active" data-category="all">全部</span>
+    {% for category_key, category_name in CATEGORIES %}
+    <span class="category-tab" data-category="{{ category_key }}">{{ category_name }}</span>
+    {% endfor %}
+</div>
+
+{% for category_key, category_name in CATEGORIES %}
+    <div class="category-section" data-category="{{ category_key }}">
+        <div class="category-title">{{ category_name }}</div>
+        {% if category_key in todos_by_category and todos_by_category[category_key] %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th class="active" style="width: 5%;">No</th>
+                    <th class="active" style="width: 10%;">优先级</th>
+                    <th class="active" style="width: 35%;">描述</th>
+                    <th class="active" style="width: 10%;">是否完成</th>
+                    <th class="active" style="width: 20%;">截止时间</th>
+                    <th class="active" style="width: 20%;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for todo in todos_by_category[category_key] %}
                     {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
+                    <tr class="success">
                     {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
+                    <tr class="priority-{{ todo.priority }}">
                     {% endif %}
-                </td>
+                        <td>{{ loop.index }}</td>
+                        <td><span class="label {% if todo.priority == 'P0' %}label-danger{% elif todo.priority == 'P1' %}label-warning{% else %}label-success{% endif %}">{{ todo.priority }}</span></td>
+                        <td>{{ todo.title }}</td>
+                        <td>{% if todo.status %}已完成{% else %}未完成{% endif %}</td>
+                        <td>
+                            {% if todo.deadline %}
+                                {{ format_deadline(todo.deadline) }}
+                                {% set overdue = get_overdue_info(todo.deadline) %}
+                                {% if overdue %}
+                                    <br><span class="overdue">{{ overdue }}</span>
+                                {% endif %}
+                            {% else %}
+                                无
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if todo.status %}
+                            <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
+                            {% else %}
+                            <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success btn-sm" role="button">修改</a>
+                            <button class="btn btn-info btn-sm btn-reminder" data-id="{{ todo.id }}">提醒</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">暂无待办事项</p>
+        {% endif %}
+    </div>
+{% endfor %}
 
-            </tr>
-        {% endfor %}
+<div class="modal fade" id="reminderModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title">创建系统提醒</h4>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active"><a href="#mac-tab" aria-controls="mac-tab" role="tab" data-toggle="tab">Mac OS</a></li>
+                    <li role="presentation"><a href="#windows-tab" aria-controls="windows-tab" role="tab" data-toggle="tab">Windows</a></li>
+                </ul>
+                <div class="tab-content" style="margin-top: 15px;">
+                    <div role="tabpanel" class="tab-pane active" id="mac-tab">
+                        <p>在Mac终端中执行以下命令创建提醒：</p>
+                        <pre id="macCommand" style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-wrap: break-word; white-space: pre-wrap;"></pre>
+                        <button class="btn btn-primary btn-sm" onclick="copyToClipboard('macCommand')">复制命令</button>
+                    </div>
+                    <div role="tabpanel" class="tab-pane" id="windows-tab">
+                        <p>在Windows管理员终端中执行以下命令创建任务计划：</p>
+                        <pre id="windowsCommand" style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-wrap: break-word; white-space: pre-wrap;"></pre>
+                        <button class="btn btn-primary btn-sm" onclick="copyToClipboard('windowsCommand')">复制命令</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-    </tbody>
-</table>
-
-<!-- Button trigger modal -->
 <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal"> ADD </button>
 
-<!-- Modal -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog"> <div class="modal-content">
 
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="myModalLabel" align="center">add new todo list</h4>
+        <h4 class="modal-title" id="myModalLabel" align="center">添加新待办事项</h4>
       </div>
 
       <div class="modal-body">
           <div class="row">
-              <div class="col-md-8 col-md-offset-2"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
+              <div class="col-md-8 col-md-offset-2">
+                  <form method="POST">
+                      {{ form.hidden_tag() }}
+                      <div class="form-group">
+                          {{ form.title.label }}
+                          {{ form.title(class="form-control") }}
+                      </div>
+                      <div class="form-group">
+                          {{ form.category.label }}
+                          {{ form.category(class="form-control") }}
+                      </div>
+                      <div class="form-group">
+                          {{ form.priority.label }}
+                          {{ form.priority(class="form-control") }}
+                      </div>
+                      <div class="form-group">
+                          {{ form.deadline.label }}
+                          <input type="datetime-local" class="form-control" name="deadline" id="deadline">
+                      </div>
+                      <div class="form-group">
+                          {{ form.status.label }}<br>
+                          {% for subfield in form.status %}
+                              <label class="radio-inline">
+                                  {{ subfield }} {{ subfield.label }}
+                              </label>
+                          {% endfor %}
+                      </div>
+                      <div class="form-group" align="center">
+                          {{ form.submit(class="btn btn-primary") }}
+                      </div>
+                  </form>
+              </div>
           </div>
-      </div> <!-- modal body -->
+      </div>
 
     </div> </div>
 </div>
 
+<script>
+function copyToClipboard(elementId) {
+    var element = document.getElementById(elementId);
+    var text = element.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        alert('已复制到剪贴板');
+    }).catch(function() {
+        alert('复制失败，请手动复制');
+    });
+}
+
+$(document).ready(function() {
+    $('.category-tab').click(function() {
+        var category = $(this).data('category');
+        $('.category-tab').removeClass('active');
+        $(this).addClass('active');
+        
+        if (category === 'all') {
+            $('.category-section').show();
+        } else {
+            $('.category-section').hide();
+            $('.category-section[data-category="' + category + '"]').show();
+        }
+    });
+    
+    $('.btn-reminder').click(function() {
+        var todoId = $(this).data('id');
+        $.ajax({
+            url: '/create_reminder/' + todoId,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}'
+            },
+            success: function(response) {
+                $('#macCommand').text(response.mac_command);
+                $('#windowsCommand').text(response.windows_command);
+                $('#reminderModal').modal('show');
+            },
+            error: function() {
+                alert('创建提醒失败');
+            }
+        });
+    });
+});
+</script>
 
 {% endblock %}
