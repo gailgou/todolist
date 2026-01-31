@@ -13,9 +13,10 @@
                         {{ current_user.username }} <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                        <li><a href="#" data-toggle="modal" data-target="#loginExistingModal">Login Existing User</a></li>
+                        <li><a href="#" data-toggle="modal" data-target="#addUserModal">Add New User</a></li>
                         <li><a href="#" data-toggle="modal" data-target="#switchUserModal">Switch User</a></li>
-                        <li><a href="#" data-toggle="modal" data-target="#addUserModal">Add User</a></li>
+                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
                     </ul>
                 </li>
             </ul>

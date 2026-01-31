@@ -84,26 +84,37 @@ def login():
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form['username'], password=request.form['password']).first()
         if user:
-            # 检查是否已有3个用户登录
-            logged_in_count = UserSession.query.filter_by(is_active=True).count()
-            if logged_in_count >= 3:
-                flash('Maximum 3 users can be logged in at the same time')
-                form = LoginForm()
-                return render_template('login.html', form=form)
+            # 检查用户是否已经登录
+            existing_session = UserSession.query.filter_by(user_id=user.id, is_active=True).first()
             
-            # 创建用户会话记录
-            session_id = str(uuid.uuid4())
-            user_session = UserSession(user_id=user.id, session_id=session_id)
-            db.session.add(user_session)
-            db.session.commit()
-            
-            # 将当前用户ID存储在session中
-            session['current_user_id'] = user.id
-            session['session_id'] = session_id
-            
-            login_user(user)
-            flash('you have logged in!')
-            return redirect(url_for('show_todo_list'))
+            if existing_session:
+                # 用户已经登录，直接切换到该用户
+                session['current_user_id'] = user.id
+                session['session_id'] = existing_session.session_id
+                login_user(user)
+                flash(f'Welcome back, {user.username}!')
+                return redirect(url_for('show_todo_list'))
+            else:
+                # 用户未登录，检查是否已有3个用户登录
+                logged_in_count = UserSession.query.filter_by(is_active=True).count()
+                if logged_in_count >= 3:
+                    flash('Maximum 3 users can be logged in at the same time')
+                    form = LoginForm()
+                    return render_template('login.html', form=form)
+                
+                # 创建用户会话记录
+                session_id = str(uuid.uuid4())
+                user_session = UserSession(user_id=user.id, session_id=session_id)
+                db.session.add(user_session)
+                db.session.commit()
+                
+                # 将当前用户ID存储在session中
+                session['current_user_id'] = user.id
+                session['session_id'] = session_id
+                
+                login_user(user)
+                flash('you have logged in!')
+                return redirect(url_for('show_todo_list'))
         else:
             flash('Invalid username or password')
     form = LoginForm()
@@ -153,7 +164,7 @@ def add_user():
         # 检查用户名是否已存在
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            flash('Username already exists')
+            flash('Username already exists. Please use login page to sign in with existing account.')
             return redirect(url_for('show_todo_list'))
         
         # 检查是否已有3个用户登录
@@ -191,6 +202,53 @@ def add_user():
         
         flash(f'New user {username} created and logged in!')
         return redirect(url_for('show_todo_list'))
+    
+    return redirect(url_for('show_todo_list'))
+
+
+@app.route('/login_existing', methods=['GET', 'POST'])
+@login_required
+def login_existing():
+    """登录已存在的用户"""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        # 查找用户
+        user = User.query.filter_by(username=username, password=password).first()
+        if user:
+            # 检查用户是否已经登录
+            existing_session = UserSession.query.filter_by(user_id=user.id, is_active=True).first()
+            
+            if existing_session:
+                # 用户已经登录，直接切换到该用户
+                session['current_user_id'] = user.id
+                session['session_id'] = existing_session.session_id
+                login_user(user)
+                flash(f'Welcome back, {user.username}!')
+                return redirect(url_for('show_todo_list'))
+            else:
+                # 用户未登录，检查是否已有3个用户登录
+                logged_in_count = UserSession.query.filter_by(is_active=True).count()
+                if logged_in_count >= 3:
+                    flash('Maximum 3 users can be logged in at the same time')
+                    return redirect(url_for('show_todo_list'))
+                
+                # 创建用户会话记录
+                session_id = str(uuid.uuid4())
+                user_session = UserSession(user_id=user.id, session_id=session_id)
+                db.session.add(user_session)
+                db.session.commit()
+                
+                # 将当前用户ID存储在session中
+                session['current_user_id'] = user.id
+                session['session_id'] = session_id
+                
+                login_user(user)
+                flash(f'{user.username} logged in successfully!')
+                return redirect(url_for('show_todo_list'))
+        else:
+            flash('Invalid username or password')
     
     return redirect(url_for('show_todo_list'))
 
