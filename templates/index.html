@@ -3,10 +3,26 @@
 
 {% block page_content %}
 
+<!-- 分类筛选 -->
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-md-12">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('show_todo_list') }}" class="btn btn-default {% if not current_category %}active{% endif %}">全部</a>
+            {% for cat in categories %}
+            <a href="{{ url_for('show_todo_list', category=cat) }}" class="btn btn-default {% if current_category == cat %}active{% endif %}">{{ cat }}</a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
 <table class="table table-hover">
     <thead>
         <th class="active">No</th>
+        <th class="active">分类</th>
+        <th class="active">优先级</th>
         <th class="active">描述</th>
+        <th class="active">截止时间</th>
+        <th class="active">逾期时间</th>
         <th class="active">是否完成</th>
         <th class="active">创建时间</th>
         <th class='active'>操作</th> 
@@ -15,17 +31,52 @@
         {% for todo in todolists %}
 
             <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
+            {% if todo.status %} 
+            <tr class="success">
+            {% elif todo.is_overdue() %}
+            <tr class="danger">
+            {% else %}
+            <tr class="info">
+            {% endif %}
                 <td>{{ loop.index }}</td>
+                <td><span class="label label-primary">{{ todo.category }}</span></td>
+                <td>
+                    {% if todo.priority == 'P0' %}
+                    <span class="label label-danger">{{ todo.priority }}</span>
+                    {% elif todo.priority == 'P1' %}
+                    <span class="label label-warning">{{ todo.priority }}</span>
+                    {% else %}
+                    <span class="label label-info">{{ todo.priority }}</span>
+                    {% endif %}
+                </td>
                 <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
+                <td>
+                    {{ todo.format_deadline() }}
+                    {% if todo.alarm_set %}
+                    <span class="label label-success" title="提醒已设置">⏰</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if todo.is_overdue() %}
+                    <span class="text-danger"><strong>逾期 {{ todo.get_overdue_time() }}</strong></span>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>{% if todo.status %}是{% else %}否{% endif %}</td>
+                <td>{{ todo.create_time | int | timestamp_to_date }}</td>
                 <td>
                     {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
+                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
                     {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
+                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success btn-sm" role="button">修改</a>
+                    {% if todo.deadline %}
+                        {% if todo.alarm_set %}
+                        <span class="btn btn-default btn-sm disabled">已提醒</span>
+                        {% else %}
+                        <a href="{{ url_for('set_alarm', id=todo.id) }}" class="btn btn-warning btn-sm" role="button" onclick="return confirm('确定要为此任务设置系统提醒吗？将在截止时间弹出窗口提醒')">提醒</a>
+                        {% endif %}
+                    {% endif %}
                     {% endif %}
                 </td>
 
@@ -44,17 +95,67 @@
 
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="myModalLabel" align="center">add new todo list</h4>
+        <h4 class="modal-title" id="myModalLabel" align="center">添加新待办事项</h4>
       </div>
 
       <div class="modal-body">
           <div class="row">
-              <div class="col-md-8 col-md-offset-2"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
+              <div class="col-md-10 col-md-offset-1">
+                  <form method="POST" action="{{ url_for('show_todo_list') }}" class="form-horizontal">
+                      {{ form.hidden_tag() }}
+                      
+                      <div class="form-group">
+                          <label class="control-label col-md-3">{{ form.title.label }}</label>
+                          <div class="col-md-9">
+                              {{ form.title(class="form-control", placeholder="请输入待办事项标题") }}
+                          </div>
+                      </div>
+                      
+                      <div class="form-group">
+                          <label class="control-label col-md-3">{{ form.category.label }}</label>
+                          <div class="col-md-9">
+                              {{ form.category(class="form-control") }}
+                          </div>
+                      </div>
+                      
+                      <div class="form-group">
+                          <label class="control-label col-md-3">{{ form.priority.label }}</label>
+                          <div class="col-md-9">
+                              {{ form.priority(class="form-control") }}
+                          </div>
+                      </div>
+                      
+                      <div class="form-group">
+                          <label class="control-label col-md-3">{{ form.deadline.label }}</label>
+                          <div class="col-md-9">
+                              <input type="datetime-local" name="deadline" class="form-control" 
+                                     value="{% if form.deadline.data %}{{ form.deadline.data.strftime('%Y-%m-%dT%H:%M') }}{% endif %}">
+                              <span class="help-block">选择截止日期和时间（可选）</span>
+                          </div>
+                      </div>
+                      
+                      <div class="form-group">
+                          <label class="control-label col-md-3">{{ form.status.label }}</label>
+                          <div class="col-md-9">
+                              {% for subfield in form.status %}
+                              <label class="radio-inline">
+                                  {{ subfield }} {{ subfield.label.text }}
+                              </label>
+                              {% endfor %}
+                          </div>
+                      </div>
+                      
+                      <div class="form-group">
+                          <div class="col-md-offset-3 col-md-9">
+                              {{ form.submit(class="btn btn-primary") }}
+                          </div>
+                      </div>
+                  </form>
+              </div>
           </div>
       </div> <!-- modal body -->
 
     </div> </div>
 </div>
-
 
 {% endblock %}
