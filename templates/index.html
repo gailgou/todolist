@@ -3,37 +3,116 @@
 
 {% block page_content %}
 
-<table class="table table-hover">
-    <thead>
-        <th class="active">No</th>
-        <th class="active">描述</th>
-        <th class="active">是否完成</th>
-        <th class="active">创建时间</th>
-        <th class='active'>操作</th> 
-    </thead>
-    <tbody>
-        {% for todo in todolists %}
+<style>
+    tr.overdue {
+        background-color: #ffcccc !important;
+    }
+    tr.overdue td {
+        background-color: #ffcccc !important;
+    }
+    .todo-section {
+        margin-bottom: 30px;
+    }
+    .section-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+    }
+    .sort-controls {
+        margin-bottom: 15px;
+    }
+</style>
 
-            <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
-                <td>{{ loop.index }}</td>
-                <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
-                <td>
-                    {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
-                    {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
-                    {% endif %}
-                </td>
+<div class="sort-controls">
+    <a href="{{ url_for('show_todo_list', sort='asc') }}" class="btn btn-default btn-sm {% if sort_order == 'asc' %}active{% endif %}">创建时间升序</a>
+    <a href="{{ url_for('show_todo_list', sort='desc') }}" class="btn btn-default btn-sm {% if sort_order == 'desc' %}active{% endif %}">创建时间降序</a>
+</div>
 
-            </tr>
-        {% endfor %}
+<form method="POST" action="{{ url_for('batch_complete') }}">
 
-    </tbody>
-</table>
+<!-- 未完成待办区域 -->
+<div class="todo-section">
+    <div class="section-title">未完成待办 ({{ uncompleted_todos|length }})</div>
+    <table class="table table-hover">
+        <thead>
+            <th class="active"><input type="checkbox" id="select-all-uncompleted"></th>
+            <th class="active">No</th>
+            <th class="active">描述</th>
+            <th class="active">截止时间</th>
+            <th class="active">是否完成</th>
+            <th class="active">创建时间</th>
+            <th class='active'>操作</th> 
+        </thead>
+        <tbody>
+            {% for todo in uncompleted_todos %}
+                <tr class="info {% if todo.is_overdue() %}overdue{% endif %}">
+                    <td><input type="checkbox" name="todo_ids" value="{{ todo.id }}"></td>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ todo.title }}</td>
+                    <td>
+                        {% if todo.deadline %}
+                            {{ todo.deadline | timestamp_to_datetime }}
+                            {% if todo.is_overdue() %}
+                                <span class="label label-danger">已超时</span>
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>否</td>
+                    <td>{{ todo.create_time | timestamp_to_datetime }}</td>
+                    <td>
+                        <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success btn-sm" role="button">修改</a>
+                        <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if uncompleted_todos %}
+    <button type="submit" class="btn btn-primary">批量完成选中项</button>
+    {% endif %}
+</div>
+
+<!-- 已完成待办区域 -->
+<div class="todo-section">
+    <div class="section-title">已完成待办 ({{ completed_todos|length }})</div>
+    <table class="table table-hover">
+        <thead>
+            <th class="active">No</th>
+            <th class="active">描述</th>
+            <th class="active">截止时间</th>
+            <th class="active">是否完成</th>
+            <th class="active">创建时间</th>
+            <th class='active'>操作</th> 
+        </thead>
+        <tbody>
+            {% for todo in completed_todos %}
+                <tr class="success">
+                    <td>{{ loop.index }}</td>
+                    <td>{{ todo.title }}</td>
+                    <td>
+                        {% if todo.deadline %}
+                            {{ todo.deadline | timestamp_to_datetime }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>是</td>
+                    <td>{{ todo.create_time | timestamp_to_datetime }}</td>
+                    <td>
+                        <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger btn-sm" role="button">删除</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+</form>
 
 <!-- Button trigger modal -->
 <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal"> ADD </button>
@@ -56,5 +135,13 @@
     </div> </div>
 </div>
 
+<script>
+    document.getElementById('select-all-uncompleted').addEventListener('change', function() {
+        var checkboxes = document.querySelectorAll('input[name="todo_ids"]');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = this.checked;
+        }
+    });
+</script>
 
 {% endblock %}
