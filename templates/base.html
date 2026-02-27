@@ -5,10 +5,39 @@
 {% block navbar %}
     <nav class="navbar navbar-inverse container">
         <div class="navbar-header"> <a class="navbar-brand" href="{{ url_for('show_todo_list') }}">TODO</a> </div>
-        <!-- logout links -->
+        <!-- 用户切换和登出功能 -->
         {% if current_user.is_authenticated %}
             <ul class="nav navbar-nav pull-right">
-                <li><a class="btn" href="{{ url_for('logout') }}">logout</a></li>
+                <!-- 显示当前用户 -->
+                <li class="navbar-text" style="color: #fff; margin-right: 15px;">
+                    当前用户: <strong>{{ current_user.username }}</strong>
+                </li>
+                <!-- 切换账号下拉菜单 -->
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle btn" data-toggle="dropdown" role="button" aria-expanded="false">
+                        切换账号 <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        {% for user in logged_in_users %}
+                            {% if user.id != current_user.id %}
+                                <li>
+                                    <a href="{{ url_for('switch_user', user_id=user.id) }}">
+                                        切换到 {{ user.username }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="disabled"><a href="#">{{ user.username }} (当前)</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if logged_in_users|length < 3 %}
+                            <li class="divider"></li>
+                            <li><a href="{{ url_for('add_account') }}">+ 添加账号</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                <!-- 登出按钮 -->
+                <li><a class="btn" href="{{ url_for('logout') }}">登出</a></li>
+                <li><a class="btn" href="{{ url_for('logout_all') }}">全部登出</a></li>
             </ul>
         {% endif %}
     </nav>
