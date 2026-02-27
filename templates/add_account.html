@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}增加登录账号{% endblock %}
+
+{% block page_content %}
+    <h1>增加登录账号</h1>
+    <p>输入其他账号的用户名和密码以添加到已登录列表</p>
+    <form method="post">
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" class="form-control" id="username" name="username" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="请输入密码">
+        </div>
+        <button type="submit" class="btn btn-default">登录并添加</button>
+    </form>
+{% endblock %}

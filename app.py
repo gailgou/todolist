@@ -1,8 +1,13 @@
 #!/usr/bin/python
 #-*- coding: UTF-8 -*-
 from __future__ import unicode_literals
+import os
+import sys
 
-from flask import (Flask, render_template, redirect, url_for, request, flash)
+# 添加当前目录到Python路径
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from flask import (Flask, render_template, redirect, url_for, request, flash, session)
 from flask_bootstrap import Bootstrap
 from flask_login import login_required, login_user, logout_user, current_user
 
@@ -30,7 +35,7 @@ login_manager.login_view = "login"
 def show_todo_list():
     form = TodoListForm()
     if request.method == 'GET':
-        todolists = TodoList.query.all()
+        todolists = TodoList.query.filter_by(user_id=current_user.id).all()
         return render_template('index.html', todolists=todolists, form=form)
     else:
         if form.validate_on_submit():
@@ -81,6 +86,11 @@ def login():
         user = User.query.filter_by(username=request.form['username'], password=request.form['password']).first()
         if user:
             login_user(user)
+            # 初始化已登录账号列表
+            logged_in_users = session.get('logged_in_users', [])
+            if user.id not in logged_in_users:
+                logged_in_users.append(user.id)
+                session['logged_in_users'] = logged_in_users
             flash('you have logged in!')
             return redirect(url_for('show_todo_list'))
         else:
@@ -97,6 +107,77 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route('/switch_account', methods=['GET', 'POST'])
+@login_required
+def switch_account():
+    # 获取已登录的账号列表
+    logged_in_users = session.get('logged_in_users', [])
+    
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        if user_id:
+            # 切换到指定账号
+            user = User.query.get(int(user_id))
+            if user:
+                logout_user()
+                login_user(user)
+                flash('账号切换成功！')
+                return redirect(url_for('show_todo_list'))
+            else:
+                flash('用户不存在')
+    
+    # 获取所有用户列表
+    users = User.query.all()
+    return render_template('switch_account.html', users=users, logged_in_users=logged_in_users)
+
+
+@app.route('/add_account', methods=['GET', 'POST'])
+@login_required
+def add_account():
+    # 获取已登录的账号列表
+    logged_in_users = session.get('logged_in_users', [])
+    
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        # 验证用户凭据
+        user = User.query.filter_by(username=username, password=password).first()
+        if user:
+            # 检查是否已经登录
+            if user.id in logged_in_users:
+                flash('该账号已经登录')
+            else:
+                # 检查登录账号数量是否超过限制
+                if len(logged_in_users) >= 3:
+                    flash('最多只能同时登录3个账号')
+                else:
+                    # 添加到已登录账号列表
+                    logged_in_users.append(user.id)
+                    session['logged_in_users'] = logged_in_users
+                    flash('账号登录成功！')
+                    return redirect(url_for('switch_account'))
+        else:
+            flash('用户名或密码错误')
+    
+    return render_template('add_account.html')
+
+
+@app.route('/remove_account/<int:user_id>')
+@login_required
+def remove_account(user_id):
+    # 获取已登录的账号列表
+    logged_in_users = session.get('logged_in_users', [])
+    
+    # 从列表中移除指定账号
+    if user_id in logged_in_users:
+        logged_in_users.remove(user_id)
+        session['logged_in_users'] = logged_in_users
+        flash('账号已从登录列表中移除')
+    
+    return redirect(url_for('switch_account'))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.filter_by(id=int(user_id)).first()
@@ -109,20 +190,32 @@ if __name__ == '__main__':
         # 检查是否已经有用户，如果没有则添加默认用户
         existing_user = User.query.first()
         if not existing_user:
-            # 添加默认用户
-            user = User(username='admin', password='admin')
-            db.session.add(user)
-            db.session.commit()
+            # 添加5个默认用户
+            users = [
+                User(username='user1', password='password1'),
+                User(username='user2', password='password2'),
+                User(username='user3', password='password3'),
+                User(username='user4', password='password4'),
+                User(username='user5', password='password5')
+            ]
             
-            # 添加默认的待办事项
+            # 为每个用户添加至少3条预置待办事项
             import time
             now = int(time.time())
-            todo1 = TodoList(user_id=user.id, title='习近平五谈稳中求进织密扎牢民生保障网', status=0)
-            todo2 = TodoList(user_id=user.id, title='特朗普获超270张选举人票将入主白宫', status=1)
-            db.session.add(todo1)
-            db.session.add(todo2)
-            db.session.commit()
             
-            print("数据库初始化完成，已添加默认用户和测试数据")
+            for user in users:
+                db.session.add(user)
+                db.session.commit()
+                
+                # 为每个用户添加3条待办事项
+                todo1 = TodoList(user_id=user.id, title=f'{user.username}的待办事项1', status=0)
+                todo2 = TodoList(user_id=user.id, title=f'{user.username}的待办事项2', status=1)
+                todo3 = TodoList(user_id=user.id, title=f'{user.username}的待办事项3', status=0)
+                db.session.add(todo1)
+                db.session.add(todo2)
+                db.session.add(todo3)
+                db.session.commit()
+            
+            print("数据库初始化完成，已添加5个默认用户和每个用户的预置待办事项")
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5004, debug=False)
