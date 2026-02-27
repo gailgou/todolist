@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}切换账号{% endblock %}
+
+{% block page_content %}
+    <h1>切换账号</h1>
+    
+    <h3>已登录的账号</h3>
+    {% if logged_in_users %}
+    <ul class="list-group">
+        {% for user in users %}
+        {% if user.id in logged_in_users %}
+        <li class="list-group-item">
+            {{ user.username }}
+            {% if user.username == current_user.username %}
+            <span class="label label-success">当前登录</span>
+            {% else %}
+            <form method="post" style="display: inline;">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit" class="btn btn-xs btn-primary">切换</button>
+            </form>
+            <a href="{{ url_for('remove_account', user_id=user.id) }}" class="btn btn-xs btn-danger">移除</a>
+            {% endif %}
+        </li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>暂无已登录的账号</p>
+    {% endif %}
+    
+    <h3>所有账号</h3>
+    <ul class="list-group">
+        {% for user in users %}
+        {% if user.id not in logged_in_users %}
+        <li class="list-group-item">
+            {{ user.username }}
+        </li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+{% endblock %}
