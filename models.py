@@ -30,3 +30,16 @@ class User(UserMixin, db.Model):
     def __init__(self, username, password):
         self.username = username
         self.password = password
+
+
+class LoggedSession(db.Model):
+    __tablename__ = "logged_session"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    session_id = db.Column(db.String(64), nullable=False)
+    login_time = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, user_id, session_id):
+        self.user_id = user_id
+        self.session_id = session_id
+        self.login_time = int(time.time())

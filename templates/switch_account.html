@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">账号管理</h3>
+            </div>
+            <div class="panel-body">
+                <p class="text-muted">已登录账号（最多支持3个账号同时登录）：</p>
+                
+                {% if logged_users %}
+                <div class="list-group">
+                    {% for lu in logged_users %}
+                    <div class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4 class="list-group-item-heading">
+                                    <span class="glyphicon glyphicon-user"></span> {{ lu.user.username }}
+                                </h4>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <a href="{{ url_for('switch_to', user_id=lu.user.id) }}" class="btn btn-primary btn-sm">切换</a>
+                                <a href="{{ url_for('logout_specific', user_id=lu.user.id) }}" class="btn btn-danger btn-sm">登出</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-warning">暂无已登录账号</p>
+                {% endif %}
+                
+                <hr>
+                
+                {% if logged_users|length < 3 %}
+                <a href="{{ url_for('login') }}" class="btn btn-success btn-block">
+                    <span class="glyphicon glyphicon-plus"></span> 登录新账号
+                </a>
+                {% else %}
+                <p class="text-warning text-center">已达到最大登录账号数量（3个），请先登出其他账号</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
