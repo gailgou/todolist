@@ -6,6 +6,19 @@
     <div class="col-md-4 col-md-offset-4">
         <h2 class="form-signin-heading">please sigin in</h2>
         {{ wtf.quick_form(form, form_type="horizontal") }}
+        
+        {% if logged_users %}
+        <hr>
+        <h4>已登录账号：</h4>
+        <div class="list-group">
+            {% for lu in logged_users %}
+            <a href="{{ url_for('switch_to', user_id=lu.user.id) }}" class="list-group-item">
+                <span class="glyphicon glyphicon-user"></span> {{ lu.user.username }}
+                <span class="pull-right"><span class="glyphicon glyphicon-chevron-right"></span></span>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
