@@ -3,6 +3,10 @@
 
 {% block page_content %}
 
+<div class="page-header">
+    <h1>{{ active_user.username if active_user else current_user.username }} 的待办事项</h1>
+</div>
+
 <table class="table table-hover">
     <thead>
         <th class="active">No</th>
@@ -19,8 +23,8 @@
             {% else %} <tr class="info"> {% endif %}
                 <td>{{ loop.index }}</td>
                 <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
+                <td>{{ '是' if todo.status else '否' }}</td>
+                <td>{{ todo.create_time|int|timestamp_to_datetime }}</td>
                 <td>
                     {% if todo.status %}
                     <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
@@ -29,6 +33,10 @@
                     {% endif %}
                 </td>
 
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5" align="center">暂无待办事项</td>
             </tr>
         {% endfor %}
 
@@ -44,7 +52,7 @@
 
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="myModalLabel" align="center">add new todo list</h4>
+        <h4 class="modal-title" id="myModalLabel" align="center">添加新待办事项</h4>
       </div>
 
       <div class="modal-body">
@@ -55,6 +63,5 @@
 
     </div> </div>
 </div>
-
 
 {% endblock %}

@@ -5,9 +5,63 @@
 {% block navbar %}
     <nav class="navbar navbar-inverse container">
         <div class="navbar-header"> <a class="navbar-brand" href="{{ url_for('show_todo_list') }}">TODO</a> </div>
-        <!-- logout links -->
+        <!-- user links -->
         {% if current_user.is_authenticated %}
             <ul class="nav navbar-nav pull-right">
+                <!-- current user info -->
+                <li class="navbar-text" style="color: #9d9d9d; margin-right: 10px;">
+                    当前用户: <strong>{{ g.current_user.username if g.current_user else current_user.username }}</strong>
+                </li>
+                
+                <!-- switch account dropdown -->
+                {% if g.logged_in_users|length > 0 %}
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        切换账号 <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="dropdown-header">已登录账号 ({{ g.logged_in_users|length }}/3)</li>
+                        {% for user in g.logged_in_users %}
+                            {% if user.id != (g.current_user.id if g.current_user else current_user.id) %}
+                            <li>
+                                <a href="{{ url_for('switch_user', user_id=user.id) }}">
+                                    {{ user.username }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="disabled">
+                                <a href="#" style="color: #337ab7;">
+                                    <span class="glyphicon glyphicon-ok"></span> {{ user.username }} (当前)
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li role="separator" class="divider"></li>
+                        
+                        <li class="dropdown-header">账号管理</li>
+                        <li>
+                            <a href="{{ url_for('login') }}">
+                                <span class="glyphicon glyphicon-plus"></span> 添加登录账号
+                            </a>
+                        </li>
+                        
+                        <li role="separator" class="divider"></li>
+                        
+                        <li class="dropdown-header">登出账号</li>
+                        {% for user in g.logged_in_users %}
+                        <li>
+                            <a href="{{ url_for('logout_user_id', user_id=user.id) }}" 
+                               onclick="return confirm('确定要登出 {{ user.username }} 吗?')">
+                                <span class="glyphicon glyphicon-log-out"></span> 登出 {{ user.username }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endif %}
+                
+                <!-- logout button -->
                 <li><a class="btn" href="{{ url_for('logout') }}">logout</a></li>
             </ul>
         {% endif %}
