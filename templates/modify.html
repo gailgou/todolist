@@ -9,3 +9,25 @@
 </div>
 
 {% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var dueDateInput = $('input[name="due_date"]');
+        dueDateInput.daterangepicker({
+            singleDatePicker: true,
+            timePicker: true,
+            timePicker24Hour: true,
+            locale: {
+                format: 'YYYY-MM-DD HH:mm:ss'
+            },
+            startDate: dueDateInput.val() || new Date(),
+            autoUpdateInput: true
+        });
+    });
+</script>
+{% endblock %}
