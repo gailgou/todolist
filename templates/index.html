@@ -3,42 +3,157 @@
 
 {% block page_content %}
 
-<table class="table table-hover">
-    <thead>
-        <th class="active">No</th>
-        <th class="active">描述</th>
-        <th class="active">是否完成</th>
-        <th class="active">创建时间</th>
-        <th class='active'>操作</th> 
-    </thead>
-    <tbody>
-        {% for todo in todolists %}
+<style>
+.overdue-row td {
+    background-color: #ffcccc !important;
+    color: #a94442 !important;
+}
+.overdue-text {
+    color: #a94442;
+    font-weight: bold;
+}
+.panel-todo {
+    margin-bottom: 20px;
+}
+</style>
 
-            <!-- tr -->
-            {% if todo.status %} <tr class="success">
-            {% else %} <tr class="info"> {% endif %}
-                <td>{{ loop.index }}</td>
-                <td>{{ todo.title }}</td>
-                <td>{{ todo.status }}</td>
-                <td>{{ todo.create_time }}</td>
-                <td>
-                    {% if todo.status %}
-                    <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
-                    {% else %}
-                    <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
-                    {% endif %}
-                </td>
+<div class="row" style="margin-bottom: 15px;">
+    <div class="col-md-6">
+        <form id="batchForm" method="POST" action="{{ url_for('batch_complete') }}" onsubmit="return confirmBatchComplete()">
+            <button type="submit" class="btn btn-success">批量完成</button>
+        </form>
+    </div>
+    <div class="col-md-6 text-right">
+        <span>排序：</span>
+        <div class="btn-group">
+            {% if sort_by == 'priority' %}
+                {% if order == 'asc' %}
+                <a href="{{ url_for('show_todo_list', sort='priority', order='asc') }}" class="btn btn-default btn-sm active">优先级 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='priority', order='desc') }}" class="btn btn-default btn-sm">优先级 ↓</a>
+                {% else %}
+                <a href="{{ url_for('show_todo_list', sort='priority', order='asc') }}" class="btn btn-default btn-sm">优先级 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='priority', order='desc') }}" class="btn btn-default btn-sm active">优先级 ↓</a>
+                {% endif %}
+            {% else %}
+                {% if order == 'asc' %}
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='asc') }}" class="btn btn-default btn-sm active">时间 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='desc') }}" class="btn btn-default btn-sm">时间 ↓</a>
+                {% else %}
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='asc') }}" class="btn btn-default btn-sm">时间 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='desc') }}" class="btn btn-default btn-sm active">时间 ↓</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
 
-            </tr>
-        {% endfor %}
+<div class="panel panel-danger panel-todo">
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            <span class="glyphicon glyphicon-exclamation-sign"></span>
+            未完成待办事项 <span class="badge">{{ incomplete_todos|length }}</span>
+            {% if incomplete_todos|selectattr('is_overdue')|list|length > 0 %}
+            <span class="overdue-text">(含 {{ incomplete_todos|selectattr('is_overdue')|list|length }} 项过期)</span>
+            {% endif %}
+        </h3>
+    </div>
+    <div class="panel-body">
+        {% if incomplete_todos %}
+        <table class="table table-hover">
+            <thead>
+                <th class="active"><input type="checkbox" id="selectAll"></th>
+                <th class="active">No</th>
+                <th class="active">优先级</th>
+                <th class="active">描述</th>
+                <th class="active">状态</th>
+                <th class="active">创建时间</th>
+                <th class="active">完成日期</th>
+                <th class='active'>操作</th> 
+            </thead>
+            <tbody>
+                {% for todo in incomplete_todos %}
+                <tr class="{% if todo.is_overdue() %}overdue-row{% else %}info{% endif %}">
+                    <td>
+                        <input type="checkbox" name="todo_ids" value="{{ todo.id }}" form="batchForm">
+                    </td>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <span class="label label-{{ todo.priority|priority_class }}">{{ todo.priority }}</span>
+                    </td>
+                    <td>{{ todo.title }}</td>
+                    <td>
+                        {% if todo.is_overdue() %}
+                        <span class="overdue-text">已过期</span>
+                        {% else %}
+                        {{ todo.status|status_text }}
+                        {% endif %}
+                    </td>
+                    <td>{{ todo.create_time|datetime_format }}</td>
+                    <td>
+                        {% if todo.due_date %}
+                        <span class="{% if todo.is_overdue() %}overdue-text{% endif %}">{{ todo.due_date }}</span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('change_todo_list', id=todo.id) }}" class="btn btn-success" role ="button">修改</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center" style="padding: 20px;">暂无未完成的待办事项</p>
+        {% endif %}
+    </div>
+</div>
 
-    </tbody>
-</table>
+<div class="panel panel-success panel-todo">
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            <span class="glyphicon glyphicon-ok-sign"></span>
+            已完成待办事项 <span class="badge">{{ complete_todos|length }}</span>
+        </h3>
+    </div>
+    <div class="panel-body">
+        {% if complete_todos %}
+        <table class="table table-hover">
+            <thead>
+                <th class="active">No</th>
+                <th class="active">优先级</th>
+                <th class="active">描述</th>
+                <th class="active">状态</th>
+                <th class="active">创建时间</th>
+                <th class="active">完成日期</th>
+                <th class='active'>操作</th> 
+            </thead>
+            <tbody>
+                {% for todo in complete_todos %}
+                <tr class="success">
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <span class="label label-{{ todo.priority|priority_class }}">{{ todo.priority }}</span>
+                    </td>
+                    <td>{{ todo.title }}</td>
+                    <td>{{ todo.status|status_text }}</td>
+                    <td>{{ todo.create_time|datetime_format }}</td>
+                    <td>{{ todo.due_date if todo.due_date else '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('delete_todo_list', id=todo.id) }}" class="btn btn-danger" role ="button">删除</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center" style="padding: 20px;">暂无已完成的待办事项</p>
+        {% endif %}
+    </div>
+</div>
 
-<!-- Button trigger modal -->
 <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal"> ADD </button>
 
-<!-- Modal -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog"> <div class="modal-content">
 
@@ -51,10 +166,49 @@
           <div class="row">
               <div class="col-md-8 col-md-offset-2"> {{ wtf.quick_form(form, form_type="horizontal") }} </div>
           </div>
-      </div> <!-- modal body -->
+      </div>
 
     </div> </div>
 </div>
 
+{% endblock %}
 
+{% block scripts %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script>
+    document.getElementById('selectAll').addEventListener('change', function() {
+        var checkboxes = document.querySelectorAll('input[name="todo_ids"]');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = this.checked;
+        }
+    });
+
+    function confirmBatchComplete() {
+        var checkboxes = document.querySelectorAll('input[name="todo_ids"]:checked');
+        if (checkboxes.length === 0) {
+            alert('请至少选择一个待办事项');
+            return false;
+        }
+        return confirm('确定要将选中的 ' + checkboxes.length + ' 个待办事项标记为完成吗？');
+    }
+
+    $(document).ready(function() {
+        $('#myModal').on('shown.bs.modal', function() {
+            $('input[name="due_date"]').daterangepicker({
+                singleDatePicker: true,
+                timePicker: true,
+                timePicker24Hour: true,
+                locale: {
+                    format: 'YYYY-MM-DD HH:mm:ss'
+                },
+                autoUpdateInput: false
+            }, function(start, end, label) {
+                $('input[name="due_date"]').val(start.format('YYYY-MM-DD HH:mm:ss'));
+            });
+        });
+    });
+</script>
 {% endblock %}
