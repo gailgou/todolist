@@ -9,7 +9,7 @@ class TodoListForm(FlaskForm):
     title = StringField('标题', validators=[DataRequired(), Length(1, 64)])
     status = RadioField('是否完成', validators=[DataRequired()],  choices=[("1", '是'),("0",'否')])
     priority = SelectField('优先级', validators=[DataRequired()], choices=[('P0', 'P0 - 紧急'), ('P1', 'P1 - 重要'), ('P2', 'P2 - 普通')], default='P2')
-    due_date = StringField('完成日期', validators=[Optional()])
+    due_date = StringField('完成日期', validators=[DataRequired()])
     submit = SubmitField('提交')
 
 

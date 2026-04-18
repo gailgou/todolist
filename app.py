@@ -56,13 +56,20 @@ def show_todo_list():
     form = TodoListForm()
     if request.method == 'GET':
         sort_by = request.args.get('sort', 'priority')
+        order = request.args.get('order', 'asc')
         if sort_by == 'priority':
-            todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.priority).all()
+            if order == 'desc':
+                todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.priority.desc()).all()
+            else:
+                todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.priority.asc()).all()
         elif sort_by == 'create_time':
-            todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.create_time.desc()).all()
+            if order == 'desc':
+                todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.create_time.desc()).all()
+            else:
+                todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.create_time.asc()).all()
         else:
-            todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.priority).all()
-        return render_template('index.html', todolists=todolists, form=form, sort_by=sort_by)
+            todolists = TodoList.query.filter_by(user_id=current_user.id).order_by(TodoList.priority.asc()).all()
+        return render_template('index.html', todolists=todolists, form=form, sort_by=sort_by, order=order)
     else:
         if form.validate_on_submit():
             todolist = TodoList(
@@ -200,4 +207,4 @@ if __name__ == '__main__':
             
             print("数据库初始化完成，已添加默认用户和测试数据")
     
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5002, debug=True)

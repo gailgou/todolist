@@ -5,14 +5,31 @@
 
 <div class="row" style="margin-bottom: 15px;">
     <div class="col-md-6">
-        <form id="batchForm" method="POST" action="{{ url_for('batch_complete') }}">
-            <button type="submit" class="btn btn-success" onclick="return confirmBatchComplete()">批量完成</button>
+        <form id="batchForm" method="POST" action="{{ url_for('batch_complete') }}" onsubmit="return confirmBatchComplete()">
+            <button type="submit" class="btn btn-success">批量完成</button>
         </form>
     </div>
     <div class="col-md-6 text-right">
         <span>排序：</span>
-        <a href="{{ url_for('show_todo_list', sort='priority') }}" class="btn btn-default btn-sm {% if sort_by == 'priority' %}active{% endif %}">按优先级</a>
-        <a href="{{ url_for('show_todo_list', sort='create_time') }}" class="btn btn-default btn-sm {% if sort_by == 'create_time' %}active{% endif %}">按时间</a>
+        <div class="btn-group">
+            {% if sort_by == 'priority' %}
+                {% if order == 'asc' %}
+                <a href="{{ url_for('show_todo_list', sort='priority', order='asc') }}" class="btn btn-default btn-sm active">优先级 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='priority', order='desc') }}" class="btn btn-default btn-sm">优先级 ↓</a>
+                {% else %}
+                <a href="{{ url_for('show_todo_list', sort='priority', order='asc') }}" class="btn btn-default btn-sm">优先级 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='priority', order='desc') }}" class="btn btn-default btn-sm active">优先级 ↓</a>
+                {% endif %}
+            {% else %}
+                {% if order == 'asc' %}
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='asc') }}" class="btn btn-default btn-sm active">时间 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='desc') }}" class="btn btn-default btn-sm">时间 ↓</a>
+                {% else %}
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='asc') }}" class="btn btn-default btn-sm">时间 ↑</a>
+                <a href="{{ url_for('show_todo_list', sort='create_time', order='desc') }}" class="btn btn-default btn-sm active">时间 ↓</a>
+                {% endif %}
+            {% endif %}
+        </div>
     </div>
 </div>
 
@@ -84,8 +101,9 @@
 
 {% block scripts %}
 {{ super() }}
-<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <script>
     document.getElementById('selectAll').addEventListener('change', function() {
         var checkboxes = document.querySelectorAll('input[name="todo_ids"]');
@@ -105,10 +123,16 @@
 
     $(document).ready(function() {
         $('#myModal').on('shown.bs.modal', function() {
-            $('input[name="due_date"]').datepicker({
-                dateFormat: 'yy-mm-dd',
-                changeMonth: true,
-                changeYear: true
+            $('input[name="due_date"]').daterangepicker({
+                singleDatePicker: true,
+                timePicker: true,
+                timePicker24Hour: true,
+                locale: {
+                    format: 'YYYY-MM-DD HH:mm:ss'
+                },
+                autoUpdateInput: false
+            }, function(start, end, label) {
+                $('input[name="due_date"]').val(start.format('YYYY-MM-DD HH:mm:ss'));
             });
         });
     });
