@@ -5,10 +5,48 @@
 {% block navbar %}
     <nav class="navbar navbar-inverse container">
         <div class="navbar-header"> <a class="navbar-brand" href="{{ url_for('show_todo_list') }}">TODO</a> </div>
-        <!-- logout links -->
+        {% if current_user.is_authenticated %}
+            <ul class="nav navbar-nav">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        当前用户: <strong>{{ active_user.username if active_user else current_user.username }}</strong> 
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        {% for user in logged_users %}
+                        <li class="{% if user.id == (active_user.id if active_user else current_user.id) %}active{% endif %}">
+                            <a href="{{ url_for('switch_user_route', user_id=user.id) }}">
+                                {% if user.id == (active_user.id if active_user else current_user.id) %}<span class="glyphicon glyphicon-ok"></span> {% endif %}
+                                {{ user.username }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav">
+                <li><a href="{{ url_for('login') }}">登录其他用户</a></li>
+            </ul>
+        {% endif %}
         {% if current_user.is_authenticated %}
             <ul class="nav navbar-nav pull-right">
-                <li><a class="btn" href="{{ url_for('logout') }}">logout</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        登出 <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="{{ url_for('logout') }}">登出当前用户</a></li>
+                        <li><a href="{{ url_for('logout_all') }}">登出所有用户</a></li>
+                        {% if logged_users|length > 1 %}
+                        <li role="separator" class="divider"></li>
+                        {% for user in logged_users %}
+                        {% if user.id != (active_user.id if active_user else current_user.id) %}
+                        <li><a href="{{ url_for('logout_user_by_id', user_id=user.id) }}">登出 {{ user.username }}</a></li>
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                    </ul>
+                </li>
             </ul>
         {% endif %}
     </nav>
@@ -16,7 +54,6 @@
 
 {% block content %}
     <div class="container">
-        <!-- flash message -->
         {% for message in get_flashed_messages() %}
         <div class="alert alert-warning alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert">
@@ -26,7 +63,6 @@
         </div>
         {% endfor %}
 
-        <!-- body block -->
         {% block page_content %} {% endblock %}
     </div>
 {% endblock %}
