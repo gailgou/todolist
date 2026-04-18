@@ -58,6 +58,15 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 
+@app.context_processor
+def inject_common_vars():
+    return dict(
+        max_logged_users=MAX_LOGGED_USERS,
+        get_logged_users=get_logged_users,
+        get_active_user=get_active_user
+    )
+
+
 def get_logged_users():
     logged_users = session.get('logged_users', [])
     users = []
