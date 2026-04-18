@@ -237,9 +237,12 @@ def login():
                 return redirect(url_for('show_todo_list'))
             
             if len(logged_users) >= MAX_LOGGED_USERS:
-                flash(f'最多只能同时登录 {MAX_LOGGED_USERS} 个用户，请先登出其他用户')
-                form = LoginForm()
-                return render_template('login.html', form=form, logged_users=get_logged_users())
+                flash(f'已达登录上限！最多同时登录 {MAX_LOGGED_USERS} 个用户，请先登出其他用户。')
+                if logged_users:
+                    return redirect(url_for('show_todo_list'))
+                else:
+                    form = LoginForm()
+                    return render_template('login.html', form=form, logged_users=get_logged_users())
             
             login_user(user)
             add_logged_user(user.id)
