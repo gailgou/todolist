@@ -2,13 +2,122 @@
 
 {% block title %}My TODO List{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+.user-dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 20px;
+}
+.user-dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+.user-dropdown-item .switch-btn {
+    text-decoration: none;
+    color: #333;
+    flex-grow: 1;
+}
+.user-dropdown-item .switch-btn:hover {
+    color: #23527c;
+}
+.user-dropdown-item .logout-btn {
+    margin-left: 15px;
+    padding: 2px 8px;
+    font-size: 12px;
+    color: #d9534f;
+    text-decoration: none;
+}
+.user-dropdown-item .logout-btn:hover {
+    background-color: #d9534f;
+    color: white;
+}
+.logout-all-btn {
+    color: #d9534f !important;
+    font-weight: bold;
+}
+.logout-all-btn:hover {
+    color: #c9302c !important;
+}
+.current-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 11px;
+    background-color: #5cb85c;
+    color: white;
+    border-radius: 3px;
+    margin-right: 8px;
+}
+.login-status {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 12px;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    margin-left: 10px;
+    color: #9d9d9d;
+}
+</style>
+{% endblock %}
+
 {% block navbar %}
     <nav class="navbar navbar-inverse container">
         <div class="navbar-header"> <a class="navbar-brand" href="{{ url_for('show_todo_list') }}">TODO</a> </div>
-        <!-- logout links -->
         {% if current_user.is_authenticated %}
+            {% set logged_users = get_logged_users() %}
+            {% set active_user = get_active_user() %}
+            <ul class="nav navbar-nav">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        当前用户: <strong>{{ active_user.username if active_user else current_user.username }}</strong>
+                        <span class="login-status">
+                            已登录: {{ logged_users|length }}/{{ max_logged_users }}
+                        </span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" style="min-width: 260px;">
+                        <li class="dropdown-header">用户列表 (点击切换)</li>
+                        {% for user in logged_users %}
+                        <li>
+                            <div class="user-dropdown-item">
+                                <a href="{{ url_for('switch_user_route', user_id=user.id) }}" class="switch-btn">
+                                    {% if user.id == (active_user.id if active_user else current_user.id) %}
+                                    <span class="current-badge">当前</span>
+                                    {% endif %}
+                                    {{ user.username }}
+                                </a>
+                                {% if user.id == (active_user.id if active_user else current_user.id) %}
+                                    <a href="{{ url_for('logout') }}" class="logout-btn" title="登出此用户">登出</a>
+                                {% else %}
+                                    <a href="{{ url_for('logout_user_by_id', user_id=user.id) }}" class="logout-btn" title="登出此用户">登出</a>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                        <li role="separator" class="divider"></li>
+                        {% if logged_users|length < max_logged_users %}
+                        <li>
+                            <a href="{{ url_for('login') }}" style="color: #337ab7;">
+                                <span class="glyphicon glyphicon-plus"></span> 登录其他用户
+                            </a>
+                        </li>
+                        {% else %}
+                        <li>
+                            <a href="#" onclick="alert('已达登录上限！最多同时登录 {{ max_logged_users }} 个用户，请先登出其他用户。'); return false;" style="color: #d9534f;">
+                                <span class="glyphicon glyphicon-lock"></span> 登录其他用户 <span class="text-muted">(已达上限)</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+            </ul>
             <ul class="nav navbar-nav pull-right">
-                <li><a class="btn" href="{{ url_for('logout') }}">logout</a></li>
+                <li>
+                    <a href="{{ url_for('logout_all') }}" class="logout-all-btn">
+                        <span class="glyphicon glyphicon-off"></span> 登出全部
+                    </a>
+                </li>
             </ul>
         {% endif %}
     </nav>
@@ -16,7 +125,6 @@
 
 {% block content %}
     <div class="container">
-        <!-- flash message -->
         {% for message in get_flashed_messages() %}
         <div class="alert alert-warning alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert">
@@ -26,7 +134,6 @@
         </div>
         {% endfor %}
 
-        <!-- body block -->
         {% block page_content %} {% endblock %}
     </div>
 {% endblock %}
